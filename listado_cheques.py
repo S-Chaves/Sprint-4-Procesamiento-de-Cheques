@@ -29,29 +29,22 @@ def filtro_fecha(row):
 
 def filtro_ambos(row):
 	return filtro_estado(row) and filtro_fecha(row)
-# Posibles expresiones para filtrar el archivo
-expresiones = {
-	"Basico": filtro_basico,
-	"Estado": filtro_estado,
-	"Fecha": filtro_fecha,
-	"Ambos": filtro_ambos
-}
 
 def get_expresion():
 	""" Retorna las expresiones a utilizar según los parámetros ingresados """
 	if estado:
 		if fecha_final: # Ingresó Estado y Fecha
-			return "Ambos"
-		return "Estado" # Ingresó solo Estado
+			return filtro_ambos
+		return filtro_estado # Ingresó solo Estado
 	elif fecha_final:
-		return "Fecha" # Ingresó solo Fecha
-	return "Basico" # No ingresó ninguno
+		return filtro_fecha # Ingresó solo Fecha
+	return filtro_basico # No ingresó ninguno
 
 def filtrar_archivo(archivo):
 	""" Filtra el archivo dado dependiendo de los parámetros opcionales """
 	expresion = get_expresion()
 	# Retornamos una lista filtrada según la expresión retornada por get_expresion
-	return [row for row in archivo if expresiones[expresion](row)]
+	return [row for row in archivo if expresion(row)]
 
 def chequear_fecha(num):
 	""" Chequea que el parámetro de fecha ingresado sea válido """
