@@ -17,33 +17,41 @@ fecha_final = ''
 #############
 # Funciones #
 #############
-def filtro_fecha(row, fecha_inicio, fecha_final):
-	""" Chequea que la fecha de origen se encuentre entre fecha_inicio y fecha_final """
-	if fecha_inicio == '':
-		return False
-	# Se transforma la fecha en string a objeto fecha
+def filtro_basico(row):
+	return (row['DNI'] == dni) and (row['Tipo'] == tipo)
+
+def filtro_estado(row):
+	return filtro_basico(row) and (row['Estado'] == estado)
+
+def filtro_fecha(row):
 	fecha_origen = datetime.strptime(row['FechaOrigen'], "%d-%m-%Y")
-	return fecha_inicio < fecha_origen and fecha_final > fecha_origen
+	return filtro_basico(row) and (fecha_inicio < fecha_origen) and (fecha_final > fecha_origen)
+
+def filtro_ambos(row):
+	return filtro_estado(row) and filtro_fecha(row)
+# Posibles expresiones para filtrar el archivo
+expresiones = {
+	"Basico": filtro_basico,
+	"Estado": filtro_estado,
+	"Fecha": filtro_fecha,
+	"Ambos": filtro_ambos
+}
+
+def get_expresion():
+	""" Retorna las expresiones a utilizar según los parámetros ingresados """
+	if estado:
+		if fecha_final: # Ingresó Estado y Fecha
+			return "Ambos"
+		return "Estado" # Ingresó solo Estado
+	elif fecha_final:
+		return "Fecha" # Ingresó solo Fecha
+	return "Basico" # No ingresó ninguno
 
 def filtrar_archivo(archivo):
 	""" Filtra el archivo dado dependiendo de los parámetros opcionales """
-	filtrado = []
-	for row in archivo:
-		dni_tipo = row['DNI'] == dni and row['Tipo'] == tipo
-		filtro_estado = row['Estado'] == estado
-
-		if dni_tipo and estado: # Ingresó estado
-			if filtro_estado: # Chequeamos que el estado pase el filtro
-				if filtro_fecha(row, fecha_inicio, fecha_final): # Ingresó estado y fecha
-					filtrado.append(row)
-				elif not fecha_inicio: # Ingresó solo estado
-					filtrado.append(row)
-		elif dni_tipo and fecha_inicio: # Ingresó solo fecha
-			if filtro_fecha(row, fecha_inicio, fecha_final):
-				filtrado.append(row)
-		elif dni_tipo: # No ingreso estado ni fecha
-			filtrado.append(row)
-	return filtrado
+	expresion = get_expresion()
+	# Retornamos una lista filtrada según la expresión retornada por get_expresion
+	return [row for row in archivo if expresiones[expresion](row)]
 
 def chequear_fecha(num):
 	""" Chequea que el parámetro de fecha ingresado sea válido """
@@ -59,7 +67,7 @@ def chequear_fecha(num):
 #############
 with open(archivo) as file:
 	reader = DictReader(file)
-	
+	# Se chequean los opcionales
 	if len(opcionales):
 		if opcionales[0] in ['PENDIENTE', 'APROBADO', 'RECHAZADO']:
 			estado = opcionales[0]
