@@ -107,14 +107,6 @@ with open(archivo) as file:
 
 		
 
-	# if len(opcionales):
-	# 	if opcionales[0] in ['PENDIENTE', 'APROBADO', 'RECHAZADO']:
-	# 		estado = opcionales[0]
-	# 		if len(opcionales) == 2:
-	# 			fecha_inicio, fecha_final = chequear_fecha(1) 
-	# 	else:
-	# 		fecha_inicio, fecha_final = chequear_fecha(0)
-
 	# Error si se repite codigo de cheque
 	filtrado = filtrar_archivo(reader)
 	nros_cheque = [elem["NroCheque"] for elem in filtrado]
