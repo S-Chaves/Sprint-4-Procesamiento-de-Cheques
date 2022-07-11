@@ -3,11 +3,32 @@
 # Se supone que no se pasan más argumentos que los opcionales.
 ##
 from datetime import datetime
+from multiprocessing.sharedctypes import Value
 from sys import argv
 from csv import DictReader
 
 # Guardamos los argumentos pasados por consola
-archivo, dni, salida, tipo, *opcionales = argv[1:]
+try:
+	archivo, dni, salida, tipo, *opcionales = argv[1:]
+except:
+	raise ValueError("Faltan parámetros obligatorios")
+
+
+try:
+	f = open(archivo, "r")
+	f.close()
+except:
+	raise ValueError("El archivo no existe")
+
+
+try:
+	int(dni)
+except:
+	raise ValueError("El DNI debe ser un número entero")
+
+if tipo != "EMITIDO" and tipo != "DEPOSITADO":
+	raise ValueError("No válido, ingresar EMITIDO o DEPOSITADO.")
+
 # Le da un formato a la fecha actual
 fecha = datetime.now().strftime("%Y-%m-%d")
 estado = ''
@@ -24,7 +45,7 @@ def filtro_estado(row):
 	return filtro_basico(row) and (row['Estado'] == estado)
 
 def filtro_fecha(row):
-	fecha_origen = datetime.strptime(row['FechaOrigen'], "%d-%m-%Y")
+	fecha_origen = datetime.fromtimestamp(int(row['FechaOrigen']))
 	return filtro_basico(row) and (fecha_inicio < fecha_origen) and (fecha_final > fecha_origen)
 
 def filtro_ambos(row):
@@ -54,6 +75,7 @@ def chequear_fecha(num):
 		fecha_final = datetime.strptime(resultado[1], "%d-%m-%Y")
 		# Si las fechas estan bien retorna una tupla
 		return fecha_inicio, fecha_final
+		
 
 #############
 # Principal #
@@ -61,13 +83,37 @@ def chequear_fecha(num):
 with open(archivo) as file:
 	reader = DictReader(file)
 	# Se chequean los opcionales
-	if len(opcionales):
-		if opcionales[0] in ['PENDIENTE', 'APROBADO', 'RECHAZADO']:
+
+	estados = opcionales[0] in ['PENDIENTE', 'APROBADO', 'RECHAZADO']
+
+	if len(opcionales)==1:
+		if estados:
 			estado = opcionales[0]
-			if len(opcionales) == 2:
-				fecha_inicio, fecha_final = chequear_fecha(1) 
 		else:
-			fecha_inicio, fecha_final = chequear_fecha(0)
+			try:
+				fecha_inicio, fecha_final = chequear_fecha(0)
+			except:
+				raise ValueError("El formato no es válido.")
+
+	elif len(opcionales)==2:
+		if estados:
+			estado = opcionales[0]
+		else:
+			raise ValueError("El formato del estado es incorrecto.")
+		try:
+			fecha_inicio, fecha_final = chequear_fecha(1)
+		except:
+			raise ValueError("El formato de la fecha es incorrecto.")
+
+		
+
+	# if len(opcionales):
+	# 	if opcionales[0] in ['PENDIENTE', 'APROBADO', 'RECHAZADO']:
+	# 		estado = opcionales[0]
+	# 		if len(opcionales) == 2:
+	# 			fecha_inicio, fecha_final = chequear_fecha(1) 
+	# 	else:
+	# 		fecha_inicio, fecha_final = chequear_fecha(0)
 
 	# Error si se repite codigo de cheque
 	filtrado = filtrar_archivo(reader)
@@ -87,4 +133,4 @@ with open(archivo) as file:
 				fila = f'{row["NumeroCuentaDestino"]},{row["Valor"]},{row["FechaOrigen"]},{row["FechaPago"]}\n'
 				archivo.write(fila)
 	else:
-		print('Tipo de salida no valido')
+		raise ValueError("No válido, ingresar PANTALLA o CSV.")
